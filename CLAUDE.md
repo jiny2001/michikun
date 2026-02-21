@@ -2,34 +2,45 @@
 
 ## Project Overview
 
-<!-- Describe what this project does -->
+Stock price dashboard that fetches historical data via yfinance, stores it in SQLite, computes annualized Sharpe ratios, and visualizes results in a Streamlit web app.
 
 ## Tech Stack
 
-<!-- e.g. TypeScript, React, Node.js, PostgreSQL -->
+- Python 3.11+
+- yfinance — stock price data
+- SQLite (stdlib sqlite3) — local data storage
+- pandas / numpy — data processing
+- Streamlit — web dashboard
+- Plotly — interactive charts
+- PyYAML — config file parsing
 
 ## Common Commands
 
 ```bash
 # Install dependencies
-# npm install / bun install / pnpm install
+pip install -r requirements.txt
 
-# Start development server
-# npm run dev
+# Start dashboard
+streamlit run app.py
 
-# Run tests
-# npm test
-
-# Build
-# npm run build
-
-# Lint / format
-# npm run lint
+# Fetch / update stock data without the UI
+python -c "from config import load_config; from data import fetch_and_store; print(fetch_and_store(load_config().tickers, load_config()))"
 ```
 
 ## Architecture
 
-<!-- Describe the high-level structure: directories, key modules, data flow -->
+```
+config.yaml   User-facing config (tickers, start_date, risk_free_rate)
+config.py     Loads config.yaml, exposes Config dataclass
+db.py         SQLite schema + helpers (upsert, query, fetch_log)
+metrics.py    Sharpe ratio calculation — pure functions, no I/O
+data.py       yfinance fetch orchestration with incremental/resume logic
+app.py        Streamlit UI — sidebar, price chart, Sharpe bar chart
+```
+
+Data flow: `config.yaml → config.py → data.py → db.py (SQLite) → app.py → charts`
+
+Incremental fetch: each ticker is committed to SQLite immediately after fetching, so the program can be paused and resumed safely from any point.
 
 ## Code Style
 

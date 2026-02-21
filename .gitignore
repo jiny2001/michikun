@@ -11,6 +11,9 @@ __pycache__/
 dist/
 build/
 
+# Runtime data
+stock_data.db
+
 # Environment variables
 .env
 

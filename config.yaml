@@ -1,0 +1,13 @@
+tickers:
+  - AAPL
+  - MSFT
+  - GOOGL
+  - TSLA
+
+# How far back to fetch data.
+# start_date (absolute YYYY-MM-DD) takes priority over period if both are set.
+start_date: "2020-01-01"
+# period: "5y"   # relative alternative: 6mo, 1y, 2y, 5y, 10y, max
+
+risk_free_rate: 0.04   # annual, e.g. 0.04 = 4%
+db_path: "stock_data.db"
