@@ -57,6 +57,17 @@ if not price_data:
     st.info("No data yet. Click **Refresh Data** in the sidebar to fetch prices.")
     st.stop()
 
+# Ticker selector — only shows tickers that have data in the DB
+available = sorted(price_data.keys())
+st.sidebar.divider()
+selected = st.sidebar.multiselect("Show Tickers", options=available, default=available)
+
+if not selected:
+    st.warning("No tickers selected. Choose at least one in the sidebar.")
+    st.stop()
+
+price_data = {t: df for t, df in price_data.items() if t in selected}
+
 # Price history chart
 st.subheader("Price History (Close)")
 frames = []
