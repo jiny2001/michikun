@@ -1,44 +1,19 @@
 .claude/
 
-# Dependencies
-node_modules/
-.pnp
-.pnp.js
+# macOS
+.DS_Store
 
-# Build output
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
 dist/
 build/
-out/
-.next/
-.nuxt/
 
 # Environment variables
 .env
-.env.local
-.env.*.local
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# OS
-.DS_Store
-Thumbs.db
 
 # Editor
 .vscode/
 .idea/
-*.swp
-*.swo
-
-# Testing
-coverage/
-
-# Cache
-.cache/
-.turbo/
-.eslintcache
-*.tsbuildinfo
