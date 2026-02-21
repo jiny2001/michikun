@@ -25,14 +25,12 @@ risk_free_pct = st.sidebar.number_input(
 )
 risk_free_rate = risk_free_pct / 100
 
-_window_options = [30, 60, 126, 252]
-_window_labels = {30: "30d (1 month)", 60: "60d (3 months)", 126: "126d (6 months)", 252: "252d (1 year)"}
-_window_default = cfg.rolling_window if cfg.rolling_window in _window_options else 252
-rolling_window = st.sidebar.selectbox(
+rolling_window = st.sidebar.number_input(
     "Rolling Window (days)",
-    options=_window_options,
-    index=_window_options.index(_window_default),
-    format_func=lambda d: _window_labels[d],
+    min_value=5,
+    max_value=1260,
+    value=cfg.rolling_window,
+    step=1,
 )
 
 col1, col2 = st.sidebar.columns(2)
