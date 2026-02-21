@@ -2,7 +2,7 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 
-from config import load_config
+from config import load_config, save_config
 import data
 import db
 import metrics
@@ -25,19 +25,27 @@ risk_free_pct = st.sidebar.number_input(
 )
 risk_free_rate = risk_free_pct / 100
 
+_window_options = [30, 60, 126, 252]
+_window_labels = {30: "30d (1 month)", 60: "60d (3 months)", 126: "126d (6 months)", 252: "252d (1 year)"}
+_window_default = cfg.rolling_window if cfg.rolling_window in _window_options else 252
 rolling_window = st.sidebar.selectbox(
     "Rolling Window (days)",
-    options=[30, 60, 126, 252],
-    index=3,
-    format_func=lambda d: {30: "30d (1 month)", 60: "60d (3 months)", 126: "126d (6 months)", 252: "252d (1 year)"}[d],
+    options=_window_options,
+    index=_window_options.index(_window_default),
+    format_func=lambda d: _window_labels[d],
 )
 
-if st.sidebar.button("Refresh Data", type="primary"):
+col1, col2 = st.sidebar.columns(2)
+if col1.button("Refresh Data", type="primary", use_container_width=True):
     with st.spinner("Fetching data..."):
         results = data.fetch_and_store(tickers, cfg)
     summary = ", ".join(f"{t}: +{n}" for t, n in results.items())
     st.sidebar.success(f"Done — {summary}")
     st.rerun()
+
+if col2.button("Save Config", use_container_width=True):
+    save_config(tickers, risk_free_rate, rolling_window)
+    st.sidebar.success("Config saved.")
 
 # Show last updated time per ticker
 conn = db.get_connection(cfg.db_path)
