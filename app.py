@@ -77,17 +77,33 @@ if not selected:
 price_data = {t: df for t, df in price_data.items() if t in selected}
 
 # Price history chart
-st.subheader("Price History (Close)")
+price_col, toggle_col = st.columns([4, 1])
+price_col.subheader("Price History (Close)")
+relative = toggle_col.toggle("Relative Price", value=False)
+
 frames = []
 for ticker, df in price_data.items():
     tmp = df[["Close"]].copy().reset_index()
     tmp.columns = ["date", "close"]
+    if relative:
+        first = tmp["close"].iloc[0]
+        tmp["close"] = (tmp["close"] / first - 1) * 100
     tmp["ticker"] = ticker
     frames.append(tmp)
 
 combined = pd.concat(frames)
-fig_price = px.line(combined, x="date", y="close", color="ticker", labels={"close": "Close Price", "date": "Date"})
+if relative:
+    y_label = "Return from Start (%)"
+    y_format = ".1f"
+else:
+    y_label = "Close Price"
+    y_format = None
+
+fig_price = px.line(combined, x="date", y="close", color="ticker", labels={"close": y_label, "date": "Date"})
 fig_price.update_layout(legend_title="Ticker", hovermode="x unified")
+if relative:
+    fig_price.update_yaxes(ticksuffix="%")
+    fig_price.add_hline(y=0, line_dash="dash", line_color="gray")
 st.plotly_chart(fig_price, use_container_width=True)
 
 # Sharpe ratio chart
