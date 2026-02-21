@@ -27,3 +27,35 @@ def compute_all_sharpe(
     result = result.dropna(subset=["sharpe"])
     result = result.sort_values("sharpe", ascending=False).reset_index(drop=True)
     return result
+
+
+def compute_rolling_sharpe(
+    df: pd.DataFrame,
+    window: int = 252,
+    risk_free_rate: float = 0.04,
+) -> pd.Series:
+    daily_returns = df["Close"].pct_change()
+    daily_rf = risk_free_rate / 252
+    rolling_mean = daily_returns.rolling(window).mean()
+    rolling_std = daily_returns.rolling(window).std()
+    rolling_sharpe = (rolling_mean - daily_rf) / rolling_std * math.sqrt(252)
+    return rolling_sharpe.dropna()
+
+
+def compute_all_rolling_sharpe(
+    price_data: dict[str, pd.DataFrame],
+    window: int = 252,
+    risk_free_rate: float = 0.04,
+) -> pd.DataFrame:
+    frames = []
+    for ticker, df in price_data.items():
+        series = compute_rolling_sharpe(df, window, risk_free_rate)
+        if series.empty:
+            continue
+        tmp = series.rename("sharpe").reset_index()
+        tmp.columns = ["date", "sharpe"]
+        tmp["ticker"] = ticker
+        frames.append(tmp)
+    if not frames:
+        return pd.DataFrame(columns=["date", "sharpe", "ticker"])
+    return pd.concat(frames, ignore_index=True)

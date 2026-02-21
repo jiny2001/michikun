@@ -25,6 +25,13 @@ risk_free_pct = st.sidebar.number_input(
 )
 risk_free_rate = risk_free_pct / 100
 
+rolling_window = st.sidebar.selectbox(
+    "Rolling Window (days)",
+    options=[30, 60, 126, 252],
+    index=3,
+    format_func=lambda d: {30: "30d (1 month)", 60: "60d (3 months)", 126: "126d (6 months)", 252: "252d (1 year)"}[d],
+)
+
 if st.sidebar.button("Refresh Data", type="primary"):
     with st.spinner("Fetching data..."):
         results = data.fetch_and_store(tickers, cfg)
@@ -98,3 +105,22 @@ else:
     table = sharpe_df[["ticker", "sharpe"]].copy()
     table["sharpe"] = table["sharpe"].round(3)
     st.dataframe(table, use_container_width=True, hide_index=True)
+
+# Rolling Sharpe ratio chart
+st.subheader(f"Rolling Sharpe Ratio ({rolling_window}-day window)")
+rolling_df = metrics.compute_all_rolling_sharpe(price_data, window=rolling_window, risk_free_rate=risk_free_rate)
+
+if rolling_df.empty:
+    st.warning(f"Not enough data for a {rolling_window}-day rolling window. Try a shorter window or refresh data.")
+else:
+    fig_rolling = px.line(
+        rolling_df,
+        x="date",
+        y="sharpe",
+        color="ticker",
+        labels={"sharpe": "Sharpe Ratio", "date": "Date"},
+    )
+    fig_rolling.add_hline(y=1, line_dash="dash", line_color="green", annotation_text="Sharpe = 1")
+    fig_rolling.add_hline(y=0, line_dash="dash", line_color="red", annotation_text="Sharpe = 0")
+    fig_rolling.update_layout(legend_title="Ticker", hovermode="x unified")
+    st.plotly_chart(fig_rolling, use_container_width=True)
