@@ -9,6 +9,15 @@ import metrics
 
 st.set_page_config(page_title="michikun", page_icon="📈", layout="wide")
 
+st.markdown("""
+<style>
+[data-testid="stMultiSelect"] [data-baseweb="select"] > div:first-child {
+    max-height: none;
+    overflow-y: visible;
+}
+</style>
+""", unsafe_allow_html=True)
+
 cfg = load_config()
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
