@@ -12,6 +12,7 @@ _DEFAULTS = {
     "risk_free_rate": 0.04,
     "rolling_window": 252,
     "selected_tickers": None,
+    "known_tickers": None,
     "db_path": "stock_data.db",
 }
 
@@ -24,6 +25,7 @@ class Config:
     risk_free_rate: float
     rolling_window: int
     selected_tickers: Optional[list[str]]
+    known_tickers: Optional[list[str]]
     db_path: str
 
 
@@ -41,6 +43,7 @@ def load_config(path: Path = CONFIG_FILE) -> Config:
         risk_free_rate=float(merged["risk_free_rate"]),
         rolling_window=int(merged["rolling_window"]),
         selected_tickers=merged.get("selected_tickers"),
+        known_tickers=merged.get("known_tickers"),
         db_path=str(merged["db_path"]),
     )
 
@@ -50,6 +53,7 @@ def save_config(
     risk_free_rate: float,
     rolling_window: int,
     selected_tickers: list[str],
+    known_tickers: list[str],
     path: Path = CONFIG_FILE,
 ) -> None:
     raw = {}
@@ -61,6 +65,7 @@ def save_config(
     raw["risk_free_rate"] = round(risk_free_rate, 6)
     raw["rolling_window"] = rolling_window
     raw["selected_tickers"] = selected_tickers
+    raw["known_tickers"] = known_tickers
 
     with open(path, "w") as f:
         yaml.dump(raw, f, default_flow_style=False, allow_unicode=True, sort_keys=False)

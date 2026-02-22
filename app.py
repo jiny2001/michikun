@@ -70,8 +70,12 @@ if not all_price_data:
 # Ticker selector — only shows tickers that have data in the DB
 available = sorted(all_price_data.keys())
 _saved_selected = sorted(t for t in (cfg.selected_tickers or available) if t in available)
+# Tickers newly in the DB that weren't known when the config was last saved → auto-select
+_known = set(cfg.known_tickers or [])
+_truly_new = [t for t in available if _known and t not in _known]
+_default_selected = sorted(set(_saved_selected) | set(_truly_new))
 st.sidebar.divider()
-selected = st.sidebar.multiselect("Show Tickers", options=available, default=_saved_selected or available)
+selected = st.sidebar.multiselect("Show Tickers", options=available, default=_default_selected)
 
 if not selected:
     st.warning("No tickers selected. Choose at least one in the sidebar.")
@@ -83,8 +87,9 @@ if (
     or abs(risk_free_rate - cfg.risk_free_rate) > 1e-9
     or int(rolling_window) != cfg.rolling_window
     or sorted(selected) != _saved_selected
+    or available != (cfg.known_tickers or [])
 ):
-    save_config(tickers, risk_free_rate, int(rolling_window), sorted(selected))
+    save_config(tickers, risk_free_rate, int(rolling_window), sorted(selected), available)
 
 # price_data is filtered for charts; all_price_data is used for Sharpe/Summary
 price_data = {t: df for t, df in all_price_data.items() if t in selected}
