@@ -99,10 +99,28 @@ price_col, toggle_col = st.columns([4, 1])
 price_col.subheader("Price History (Close)")
 relative = toggle_col.toggle("Relative Price", value=True)
 
+# Date range for the chart — also sets the baseline for relative price
+all_dates = sorted({
+    d for df in price_data.values()
+    for d in df.reset_index()["date"].tolist()
+})
+date_min, date_max = all_dates[0].date(), all_dates[-1].date()
+range_start, range_end = st.slider(
+    "Date Range",
+    min_value=date_min,
+    max_value=date_max,
+    value=(date_min, date_max),
+    format="YYYY-MM-DD",
+    label_visibility="collapsed",
+)
+
 frames = []
 for ticker, df in price_data.items():
     tmp = df[["Close"]].copy().reset_index()
     tmp.columns = ["date", "close"]
+    tmp = tmp[(tmp["date"].dt.date >= range_start) & (tmp["date"].dt.date <= range_end)]
+    if tmp.empty:
+        continue
     if relative:
         first = tmp["close"].iloc[0]
         tmp["close"] = (tmp["close"] / first - 1) * 100
