@@ -14,6 +14,10 @@ build/
 # Runtime data
 stock_data.db
 
+# Config
+config.yaml
+config_test.yaml
+
 # Environment variables
 .env
 
