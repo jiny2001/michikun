@@ -143,6 +143,9 @@ rolling_df = metrics.compute_all_rolling_sharpe(price_data, window=rolling_windo
 if rolling_df.empty:
     st.warning(f"Not enough data for a {rolling_window}-day rolling window. Try a shorter window or refresh data.")
 else:
+    rolling_df = rolling_df[
+        (rolling_df["date"].dt.date >= range_start) & (rolling_df["date"].dt.date <= range_end)
+    ]
     fig_rolling = px.line(
         rolling_df,
         x="date",
