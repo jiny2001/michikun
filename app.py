@@ -33,17 +33,12 @@ rolling_window = st.sidebar.number_input(
     step=1,
 )
 
-col1, col2 = st.sidebar.columns(2)
-if col1.button("Refresh Data", type="primary", use_container_width=True):
+if st.sidebar.button("Refresh Data", type="primary", use_container_width=True):
     with st.spinner("Fetching data..."):
         results = data.fetch_and_store(tickers, cfg)
     summary = ", ".join(f"{t}: +{n}" for t, n in results.items())
     st.sidebar.success(f"Done — {summary}")
     st.rerun()
-
-if col2.button("Save Config", use_container_width=True):
-    save_config(tickers, risk_free_rate, rolling_window)
-    st.sidebar.success("Config saved.")
 
 # Show last updated time per ticker
 conn = db.get_connection(cfg.db_path)
@@ -65,12 +60,22 @@ if not all_price_data:
 
 # Ticker selector — only shows tickers that have data in the DB
 available = sorted(all_price_data.keys())
+_saved_selected = sorted(t for t in (cfg.selected_tickers or available) if t in available)
 st.sidebar.divider()
-selected = st.sidebar.multiselect("Show Tickers", options=available, default=available)
+selected = st.sidebar.multiselect("Show Tickers", options=available, default=_saved_selected or available)
 
 if not selected:
     st.warning("No tickers selected. Choose at least one in the sidebar.")
     st.stop()
+
+# Auto-save whenever any sidebar value differs from what's on disk
+if (
+    tickers != cfg.tickers
+    or abs(risk_free_rate - cfg.risk_free_rate) > 1e-9
+    or int(rolling_window) != cfg.rolling_window
+    or sorted(selected) != _saved_selected
+):
+    save_config(tickers, risk_free_rate, int(rolling_window), sorted(selected))
 
 # price_data is filtered for charts; all_price_data is used for Sharpe/Summary
 price_data = {t: df for t, df in all_price_data.items() if t in selected}
@@ -78,7 +83,7 @@ price_data = {t: df for t, df in all_price_data.items() if t in selected}
 # ── Price History ─────────────────────────────────────────────────────────────
 price_col, toggle_col = st.columns([4, 1])
 price_col.subheader("Price History (Close)")
-relative = toggle_col.toggle("Relative Price", value=False)
+relative = toggle_col.toggle("Relative Price", value=True)
 
 frames = []
 for ticker, df in price_data.items():
