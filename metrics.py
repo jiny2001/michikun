@@ -15,12 +15,25 @@ def compute_sharpe(df: pd.DataFrame, risk_free_rate: float = 0.04) -> float:
     return float(sharpe)
 
 
+def compute_annual_return(df: pd.DataFrame) -> float:
+    if df.empty or len(df) < 2:
+        return float("nan")
+    n_days = len(df)
+    total = df["Close"].iloc[-1] / df["Close"].iloc[0] - 1
+    annual = (1 + total) ** (252 / n_days) - 1
+    return float(annual * 100)  # as percentage
+
+
 def compute_all_sharpe(
     price_data: dict[str, pd.DataFrame],
     risk_free_rate: float = 0.04,
 ) -> pd.DataFrame:
     records = [
-        {"ticker": ticker, "sharpe": compute_sharpe(df, risk_free_rate)}
+        {
+            "ticker": ticker,
+            "sharpe": compute_sharpe(df, risk_free_rate),
+            "annual_return": compute_annual_return(df),
+        }
         for ticker, df in price_data.items()
     ]
     result = pd.DataFrame(records)

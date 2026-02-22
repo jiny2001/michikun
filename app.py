@@ -57,14 +57,14 @@ if latest:
 # ── Main ─────────────────────────────────────────────────────────────────────
 st.title("Stock Sharpe Ratio Dashboard")
 
-price_data = data.load_all_prices(tickers, cfg.db_path)
+all_price_data = data.load_all_prices(tickers, cfg.db_path)
 
-if not price_data:
+if not all_price_data:
     st.info("No data yet. Click **Refresh Data** in the sidebar to fetch prices.")
     st.stop()
 
 # Ticker selector — only shows tickers that have data in the DB
-available = sorted(price_data.keys())
+available = sorted(all_price_data.keys())
 st.sidebar.divider()
 selected = st.sidebar.multiselect("Show Tickers", options=available, default=available)
 
@@ -72,9 +72,10 @@ if not selected:
     st.warning("No tickers selected. Choose at least one in the sidebar.")
     st.stop()
 
-price_data = {t: df for t, df in price_data.items() if t in selected}
+# price_data is filtered for charts; all_price_data is used for Sharpe/Summary
+price_data = {t: df for t, df in all_price_data.items() if t in selected}
 
-# Price history chart
+# ── Price History ─────────────────────────────────────────────────────────────
 price_col, toggle_col = st.columns([4, 1])
 price_col.subheader("Price History (Close)")
 relative = toggle_col.toggle("Relative Price", value=False)
@@ -90,13 +91,7 @@ for ticker, df in price_data.items():
     frames.append(tmp)
 
 combined = pd.concat(frames)
-if relative:
-    y_label = "Return from Start (%)"
-    y_format = ".1f"
-else:
-    y_label = "Close Price"
-    y_format = None
-
+y_label = "Return from Start (%)" if relative else "Close Price"
 fig_price = px.line(combined, x="date", y="close", color="ticker", labels={"close": y_label, "date": "Date"})
 fig_price.update_layout(legend_title="Ticker", hovermode="x unified")
 if relative:
@@ -104,42 +99,7 @@ if relative:
     fig_price.add_hline(y=0, line_dash="dash", line_color="gray")
 st.plotly_chart(fig_price, use_container_width=True)
 
-# Sharpe ratio chart
-st.subheader("Annualized Sharpe Ratio")
-sharpe_df = metrics.compute_all_sharpe(price_data, risk_free_rate)
-
-if sharpe_df.empty:
-    st.warning("Not enough data to compute Sharpe ratios.")
-else:
-    def _color(v):
-        if v >= 1:
-            return "green"
-        elif v >= 0:
-            return "gold"
-        else:
-            return "red"
-
-    sharpe_df["color"] = sharpe_df["sharpe"].apply(_color)
-    fig_sharpe = px.bar(
-        sharpe_df,
-        x="sharpe",
-        y="ticker",
-        orientation="h",
-        color="sharpe",
-        color_continuous_scale=["red", "gold", "green"],
-        labels={"sharpe": "Sharpe Ratio", "ticker": "Ticker"},
-        text=sharpe_df["sharpe"].round(2),
-    )
-    fig_sharpe.update_layout(yaxis={"categoryorder": "total ascending"}, coloraxis_showscale=False)
-    st.plotly_chart(fig_sharpe, use_container_width=True)
-
-    # Summary table
-    st.subheader("Summary")
-    table = sharpe_df[["ticker", "sharpe"]].copy()
-    table["sharpe"] = table["sharpe"].round(3)
-    st.dataframe(table, use_container_width=True, hide_index=True)
-
-# Rolling Sharpe ratio chart
+# ── Rolling Sharpe Ratio ──────────────────────────────────────────────────────
 st.subheader(f"Rolling Sharpe Ratio ({rolling_window}-day window)")
 rolling_df = metrics.compute_all_rolling_sharpe(price_data, window=rolling_window, risk_free_rate=risk_free_rate)
 
@@ -157,3 +117,31 @@ else:
     fig_rolling.add_hline(y=0, line_dash="dash", line_color="red", annotation_text="Sharpe = 0")
     fig_rolling.update_layout(legend_title="Ticker", hovermode="x unified")
     st.plotly_chart(fig_rolling, use_container_width=True)
+
+# ── Annualized Sharpe Ratio (all tickers) ────────────────────────────────────
+st.subheader("Annualized Sharpe Ratio")
+sharpe_df = metrics.compute_all_sharpe(all_price_data, risk_free_rate)
+
+if sharpe_df.empty:
+    st.warning("Not enough data to compute Sharpe ratios.")
+else:
+    fig_sharpe = px.bar(
+        sharpe_df,
+        x="sharpe",
+        y="ticker",
+        orientation="h",
+        color="sharpe",
+        color_continuous_scale=["red", "gold", "green"],
+        labels={"sharpe": "Sharpe Ratio", "ticker": "Ticker"},
+        text=sharpe_df["sharpe"].round(2),
+    )
+    fig_sharpe.update_layout(yaxis={"categoryorder": "total ascending"}, coloraxis_showscale=False)
+    st.plotly_chart(fig_sharpe, use_container_width=True)
+
+    # ── Summary (all tickers) ─────────────────────────────────────────────────
+    st.subheader("Summary")
+    table = sharpe_df[["ticker", "annual_return", "sharpe"]].copy()
+    table = table.rename(columns={"annual_return": "Annual Return (%)", "sharpe": "Sharpe Ratio"})
+    table["Annual Return (%)"] = table["Annual Return (%)"].round(2)
+    table["Sharpe Ratio"] = table["Sharpe Ratio"].round(3)
+    st.dataframe(table, use_container_width=True, hide_index=True)
